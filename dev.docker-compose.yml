@@ -1,0 +1,6 @@
+version: '2.1'
+services:
+
+    webserver:
+      image: datafuel/airflow
+      build: ./airflow_repo
