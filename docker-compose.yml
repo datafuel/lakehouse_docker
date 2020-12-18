@@ -16,7 +16,7 @@ services:
         #     - ./pgdata:/var/lib/postgresql/data/pgdata
 
     webserver:
-        image: apache/airflow:latest
+        image: datafuel/airflow:latest
         restart: always
         depends_on:
             - postgres
@@ -31,7 +31,8 @@ services:
             # - REDIS_PASSWORD=redispass
         volumes:
             - ./dags:/usr/local/airflow/dags
-            - ./airflow_repo/airflow_user_home:${AIRFLOW_USER_HOME}
+            # - ./airflow_repo/airflow.cfg/:${AIRFLOW_USER_HOME}/airflow.cfg
+            # - ./airflow_repo/entrypoint.sh:${AIRFLOW_USER_HOME}/entrypoint.sh
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
         ports:
@@ -44,7 +45,7 @@ services:
             retries: 3
 
     flower:
-        image: apache/airflow:latest
+        image: datafuel/airflow:latest
         restart: always
         depends_on:
             - redis
@@ -56,12 +57,14 @@ services:
         command: flower
 
     scheduler:
-        image: apache/airflow:latest
+        image: datafuel/airflow:latest
         restart: always
         depends_on:
             - webserver
         volumes:
             - ./dags:/usr/local/airflow/dags
+            # - ./airflow_repo/airflow.cfg/:${AIRFLOW_USER_HOME}/airflow.cfg
+            # - ./airflow_repo/entrypoint.sh:${AIRFLOW_USER_HOME}/entrypoint.sh
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
         environment:
@@ -75,12 +78,14 @@ services:
         command: scheduler
 
     worker:
-        image: apache/airflow:latest
+        image: datafuel/airflow:latest
         restart: always
         depends_on:
             - scheduler
         volumes:
             - ./dags:/usr/local/airflow/dags
+            # - ./airflow_repo/airflow.cfg/:${AIRFLOW_USER_HOME}/airflow.cfg
+            # - ./airflow_repo/entrypoint.sh:${AIRFLOW_USER_HOME}/entrypoint.sh
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
         environment:
