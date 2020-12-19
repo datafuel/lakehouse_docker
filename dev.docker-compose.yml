@@ -3,4 +3,4 @@ services:
 
     webserver:
       image: datafuel/airflow
-      build: ./airflow_repo
+      build: ./airflow_dir

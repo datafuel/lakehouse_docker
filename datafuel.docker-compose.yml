@@ -170,7 +170,7 @@ services:
         restart: always
         command: /opt/hive/bin/hive --service metastore
         environment:
-            SERVICE_PRECONDITION: "namenode:50070 datanode:50075 hive-metastore-postgresql:5432"
+            SERVICE_PRECONDITION: "hive-metastore-postgresql:5432"
             HDFS_CONF_fs_s3a_access_key: ${MINIO_ACCESS_KEY}
             HDFS_CONF_fs_s3a_secret_key: ${MINIO_SECRET_KEY}
         ports:
@@ -179,9 +179,8 @@ services:
 
     hive-metastore-postgresql:
         image: bde2020/hive-metastore-postgresql:2.3.0
-        # volumes:
-        #     - ${DATADIR}/hive-metastore:/var/lib/postgresql/data
-        
-
-# volumes:
-#     hive-temporary-staging-directory:
+networks: 
+    default: 
+        external: 
+            name: datafuel-local-network
+            
