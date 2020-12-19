@@ -18,4 +18,8 @@ An local setup for Airflow v2 with docker-compose (future Lakehouse)
 3. Rename **.env.example** to **.env** and replace dummy values with yours
 4. Run `docker-compose up` then access the services
 
+# Integration with other stacks of datafuel
+1. Run `docker network create datafuel-local-network`
+2. Run `docker-compose -f datafuel.docker-compose.yml`
+
 Make sure to wait at least 30 seconds before launching any service ! 
