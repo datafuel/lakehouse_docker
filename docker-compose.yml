@@ -7,9 +7,9 @@ services:
     postgres:
         image: postgres:latest
         environment:
-            - POSTGRES_USER=airflow
-            - POSTGRES_PASSWORD=airflow
-            - POSTGRES_DB=airflow
+            - POSTGRES_USER=$POSTGRES_AIRFLOW_USER
+            - POSTGRES_PASSWORD=$POSTGRES_AIRFLOW_PASSWORD
+            - POSTGRES_DB=$POSTGRES_AIRFLOW_DB
         # Uncomment these lines to persist data on the local filesystem.
         #     - PGDATA=/var/lib/postgresql/data/pgdata
         # volumes:
@@ -22,27 +22,32 @@ services:
             - postgres
             - redis
         environment:
-            - LOAD_EX=n
-            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
-            - EXECUTOR=Celery
+            - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql://${POSTGRES_AIRFLOW_USER}:${POSTGRES_AIRFLOW_PASSWORD}@postgres:5432/${POSTGRES_AIRFLOW_DB}
+            - AIRFLOW_ADMIN_USERNAME=$AIRFLOW_ADMIN_USERNAME
+            - AIRFLOW_ADMIN_PASSWORD=$AIRFLOW_ADMIN_PASSWORD
+            - AIRFLOW_ADMIN_FIRST_NAME=$AIRFLOW_ADMIN_FIRST_NAME
+            - AIRFLOW_ADMIN_LAST_NAME=$AIRFLOW_ADMIN_LAST_NAME
+            - AIRFLOW_ADMIN_EMAIL=$AIRFLOW_ADMIN_EMAIL
             # - POSTGRES_USER=airflow
             # - POSTGRES_PASSWORD=airflow
             # - POSTGRES_DB=airflow
             # - REDIS_PASSWORD=redispass
         volumes:
             - ./dags:/usr/local/airflow/dags
-            # - ./airflow_repo/airflow.cfg/:${AIRFLOW_USER_HOME}/airflow.cfg
-            # - ./airflow_repo/entrypoint.sh:${AIRFLOW_USER_HOME}/entrypoint.sh
+            - ./airflow_repo/setup/airflow.cfg:${AIRFLOW_USER_HOME}/airflow.cfg
+            - ./airflow_repo/setup/setup.sh:${AIRFLOW_USER_HOME}/setup.sh
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
         ports:
             - "8080:8080"
-        command: webserver
-        healthcheck:
-            test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
-            interval: 30s
-            timeout: 30s
-            retries: 3
+        stdin_open: true
+        tty: true
+        command: /bin/bash setup.sh
+        # healthcheck:
+        #     test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+        #     interval: 30s
+        #     timeout: 30s
+        #     retries: 3
 
     flower:
         image: datafuel/airflow:latest
@@ -51,10 +56,14 @@ services:
             - redis
         environment:
             - EXECUTOR=Celery
+            - AIRFLOW__CELERY__RESULT_BACKEND_SECRET=postgresql://${POSTGRES_AIRFLOW_USER}:${POSTGRES_AIRFLOW_PASSWORD}@postgres:5432/${POSTGRES_AIRFLOW_DB}
+            - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql://${POSTGRES_AIRFLOW_USER}:${POSTGRES_AIRFLOW_PASSWORD}@postgres:5432/${POSTGRES_AIRFLOW_DB}
             # - REDIS_PASSWORD=redispass
+        volumes:
+            - ./airflow_repo/setup/airflow.cfg:${AIRFLOW_USER_HOME}/airflow.cfg
         ports:
             - "5555:5555"
-        command: flower
+        command: airflow celery flower
 
     scheduler:
         image: datafuel/airflow:latest
@@ -63,19 +72,20 @@ services:
             - webserver
         volumes:
             - ./dags:/usr/local/airflow/dags
+            - ./airflow_repo/setup/airflow.cfg/:${AIRFLOW_USER_HOME}/airflow.cfg
             # - ./airflow_repo/airflow.cfg/:${AIRFLOW_USER_HOME}/airflow.cfg
             # - ./airflow_repo/entrypoint.sh:${AIRFLOW_USER_HOME}/entrypoint.sh
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
         environment:
             - LOAD_EX=n
-            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
             - EXECUTOR=Celery
+            - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql://${POSTGRES_AIRFLOW_USER}:${POSTGRES_AIRFLOW_PASSWORD}@postgres:5432/${POSTGRES_AIRFLOW_DB}
             # - POSTGRES_USER=airflow
             # - POSTGRES_PASSWORD=airflow
             # - POSTGRES_DB=airflow
             # - REDIS_PASSWORD=redispass
-        command: scheduler
+        command: airflow scheduler
 
     worker:
         image: datafuel/airflow:latest
@@ -84,15 +94,22 @@ services:
             - scheduler
         volumes:
             - ./dags:/usr/local/airflow/dags
+            - ./airflow_repo/setup/airflow.cfg:${AIRFLOW_USER_HOME}/airflow.cfg
             # - ./airflow_repo/airflow.cfg/:${AIRFLOW_USER_HOME}/airflow.cfg
             # - ./airflow_repo/entrypoint.sh:${AIRFLOW_USER_HOME}/entrypoint.sh
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
         environment:
-            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
             - EXECUTOR=Celery
-            # - POSTGRES_USER=airflow
+            - AIRFLOW__CELERY__RESULT_BACKEND_SECRET=postgresql://${POSTGRES_AIRFLOW_USER}:${POSTGRES_AIRFLOW_PASSWORD}@postgres:5432/${POSTGRES_AIRFLOW_DB}
+            - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql://${POSTGRES_AIRFLOW_USER}:${POSTGRES_AIRFLOW_PASSWORD}@postgres:5432/${POSTGRES_AIRFLOW_DB}            # - POSTGRES_USER=airflow
             # - POSTGRES_PASSWORD=airflow
             # - POSTGRES_DB=airflow
             # - REDIS_PASSWORD=redispass
-        command: worker
+        command: airflow celery worker
+
+networks: 
+    default: 
+        external: 
+            name: aida-local-network
+            
